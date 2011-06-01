@@ -27,6 +27,7 @@
  *   gradlew TASK1, TASK2, ... (or gradle TASK1, ... if gradle is installed.)
  * 
  *   build - builds the application
+ *   install - creates scripts to run applications
  *   deploy - deploys the S4 app to the S4 image
  *   clean - cleans build dir and removes app from S4 image
  *   eclipse - creates an project for the Eclipse IDE
@@ -35,6 +36,10 @@
 /* Include handy Gradle plugins. */
 apply plugin: 'eclipse'
 apply plugin: 'java'
+apply plugin: "application"
+
+/* Main application to run ... */
+mainClassName = "io.s4.example.twittertopiccount.Main"
 
 /* Set a version number for your app. */
  version = new Version(major: 0, minor: 1, releaseType: 'SNAPSHOT')
