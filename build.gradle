@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010 Yahoo! Inc. All rights reserved.
+ * Copyright (c) 2011 Yahoo! Inc. All rights reserved.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,136 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
+
+/*
+ * Twitter Topic Count Application Build Script
+ *
+ * Modify this script to create a build script for your app.
+ * 
+ * NOTE: You must set up the environment variable S4_IMAGE before 
+ * running this script.
+ * 
+ * Tasks:
+ * 
+ *   gradlew TASK1, TASK2, ... (or gradle TASK1, ... if gradle is installed.)
+ * 
+ *   build - builds the application
+ *   deploy - deploys the S4 app to the S4 image
+ *   clean - cleans build dir and removes app from S4 image
+ *   eclipse - creates an project for the Eclipse IDE
+ */
+
+/* Include handy Gradle plugins. */
+apply plugin: 'eclipse'
+apply plugin: 'java'
+
+/* Set a version number for your app. */
+ version = new Version(major: 0, minor: 1, releaseType: 'SNAPSHOT')
+ group = 'io.s4'
+
+ /* Read S4_IMAGE environment variable. */
+ env = System.getenv()
+ s4Image = env['S4_IMAGE']
+
+ if (s4Image == null) {
+     logger.warn("\nEnvironment variable S4_IMAGE not set.")
+     System.exit(-1)
+ }
+ 
+ /* All project libraries must be defined here. */
+ libraries = [
+ s4_core:            'io.s4:s4-core:0.3-SNAPSHOT',
+ s4_driver:          'io.s4:s4-driver:0.3-SNAPSHOT',
+ json:               'org.json:json:20090211',
+ gson:               'com.google.code.gson:gson:1.6',
+ log4j:              'log4j:log4j:1.2.15',
+ jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
+ commons_logging:    'commons-logging:commons-logging:1.1.1',
+ commons_io:         'commons-io:commons-io:2.0.1',
+ commons_config:     'commons-configuration:commons-configuration:1.6',
+ commons_codec:      'commons-codec:commons-codec:1.4',
+ commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
+ spring:             'org.springframework:spring:2.5.6',
+ junit:              'junit:junit:4.4'
+ ]
+
+/* Set Java version. */
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+   
+/* Search these repos to find artifacts. Gradle will download and cache. */
+repositories {
+    flatDir name: 's4core', dirs:  "${s4Image}/s4-core/lib"
+    flatDir name: 's4driver', dirs:  "${s4Image}/s4-driver/lib"
+    mavenLocal()
+    mavenCentral()
+}
+   
+/* Dependencies. */
 dependencies {
-    compile( libraries.json )
-    compile( libraries.commons_codec )
-    compile( libraries.commons_httpclient )
-    compile project(':s4-core')
+	compile( libraries.s4_core)
+	compile( libraries.json)
+	compile( libraries.gson)
+	compile( libraries.log4j )
+	compile( libraries.commons_logging )
+	compile( libraries.commons_io )
+	compile( libraries.commons_config )
+	compile( libraries.commons_codec )
+	compile( libraries.commons_httpclient )
+	testCompile( libraries.junit )
 }
 
+/* Customize your jar files. */
+manifest.mainAttributes(
+    provider: 'gradle',
+    'Implementation-Url': 'http://s4.io',
+    'Implementation-Version': version,
+    'Implementation-Vendor': 'The S4 Project',
+    'Implementation-Vendor-Id': 'io.s4'
+)
+
+/* Bug workaround. */
+eclipseClasspath {
+    downloadSources = false; // required for eclipseClasspath to work
+}
+
+/* Create an inage to copy and archive your app. */
+deployImage = copySpec {
+    into ("s4-apps/" + project.name + "/lib") {
+        from project.configurations.runtime
+        from project.configurations.archives.allArtifactFiles
+    }
+    into ("s4-apps/" + project.name) {
+        from project.sourceSets.main.resources
+    }
+}
+
+/* Copy to the S4 Image. */
+task deploy(type: Copy) {
+    description = "Copy app files to deployment dir."
+    destinationDir = file(s4Image)
+    with deployImage
+}
+
+/* Add remove app to the clean task. */
+task cleanDeployment(type: Delete) {
+    delete("${s4Image}/s4-apps/${project.name}")
+}
+clean.dependsOn cleanDeployment
+
+/* Generates the gradlew scripts.
+http://www.gradle.org/1.0-milestone-3/docs/userguide/gradle_wrapper.html */ 
+task wrapper(type: Wrapper) { 
+    gradleVersion = '1.0-milestone-3' 
+}
+
+class Version {
+    int major
+    int minor
+    int bugfix
+    String releaseType
+ 
+    String toString() {
+        "$major.$minor-$releaseType${bugfix ?: ''}"
+    }
+}
