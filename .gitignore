@@ -7,7 +7,6 @@
 target/
 build/
 bin/
-gradle/
 
 # SVN
 .svn
