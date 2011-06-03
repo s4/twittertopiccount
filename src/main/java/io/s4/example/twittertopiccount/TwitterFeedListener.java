@@ -15,35 +15,81 @@
  */
 package io.s4.example.twittertopiccount;
 
+import io.s4.client.Driver;
+import io.s4.client.Message;
+
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.httpclient.util.EncodingUtil;
 
-import io.s4.collector.EventWrapper;
-import io.s4.listener.EventHandler;
-import io.s4.listener.EventProducer;
 
-public class TwitterFeedListener implements EventProducer, Runnable {
+public class TwitterFeedListener {
     private String userid;
     private String password;
-    private String urlString;
+    private String urlString = "http://stream.twitter.com/1/statuses/sample.json";
+    private String clientAdapterHost = "localhost";
+    private int clientAdapterPort = 2334;
     private long maxBackoffTime = 30 * 1000; // 5 seconds
     private long messageCount = 0;
     private long blankCount = 0;
-    private String streamName;
-
+    private String streamName = "RawStatus";
+    private Map<String, String> fieldMap = new HashMap<String, String>();
+    private Driver driver;
     private LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<String>();
-    private Set<io.s4.listener.EventHandler> handlers = new HashSet<io.s4.listener.EventHandler>();
+    
+    public TwitterFeedListener() {
+        fieldMap.put("in_reply_to_screen_name", "inReplyToScreenName");
+        fieldMap.put("screen_name", "screenName");
+        fieldMap.put("followers_count", "followersCount");
+        fieldMap.put("profile_image_url", "profileImageUrl");
+        fieldMap.put("friends_count", "friendsCount");
+        fieldMap.put("favourites_count", "favouritesCount");
+        fieldMap.put("geo_enabled", "geoEnabled");
+        fieldMap.put("listed_count", "listedCount");
+        fieldMap.put("profile_background_image_url", "profileBackgroundImageUrl");
+        fieldMap.put("protected_user", "protectedUser");
+        fieldMap.put("statuses_count", "statusesCount");
+        fieldMap.put("time_zone", "timeZone");
+        fieldMap.put("contributors_enabled", "contributorsEnabled");
+        fieldMap.put("utc_offset", "utcOffset");
+        fieldMap.put("created_at", "createdAt");
+        fieldMap.put("in_reply_to_status_id", "inReplyToStatusId");
+        fieldMap.put("in_reply_to_userid", "inReplyToUserId");
+    }
+    
+    public void init() {
+        driver = new Driver(clientAdapterHost, clientAdapterPort);
+        try {
+            boolean init = driver.init();
+            init &= driver.connect();
+            if (!init) {
+                throw new RuntimeException("Failed to initialize client adapter driver");
+            }
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+        
+        (new Thread(new Dequeuer())).start();
+    }
 
     public void setUserid(String userid) {
         this.userid = userid;
@@ -65,13 +111,12 @@ public class TwitterFeedListener implements EventProducer, Runnable {
         this.streamName = streamName;
     }
 
-    public void init() {
-        for (int i = 0; i < 12; i++) {
-            Dequeuer dequeuer = new Dequeuer(i);
-            Thread t = new Thread(dequeuer);
-            t.start();
-        }
-        (new Thread(this)).start();
+    public void setClientAdapterHost(String clientAdapterHost) {
+        this.clientAdapterHost = clientAdapterHost;
+    }
+
+    public void setClientAdapterPort(int clientAdapterPort) {
+        this.clientAdapterPort = clientAdapterPort;
     }
 
     public void run() {
@@ -117,239 +162,140 @@ public class TwitterFeedListener implements EventProducer, Runnable {
             messageQueue.add(inputLine);
         }
     }
-
+    
     class Dequeuer implements Runnable {
-        private int id;
-
-        public Dequeuer(int id) {
-            this.id = id;
-        }
-
         public void run() {
             while (!Thread.interrupted()) {
                 try {
                     String message = messageQueue.take();
-                    JSONObject jsonObject = new JSONObject(message);
+                    JSONObject messageJSON = new JSONObject(message);
 
                     // ignore delete records for now
-                    if (jsonObject.has("delete")) {
+                    if (messageJSON.has("delete")) {
                         continue;
                     }
 
-                    Status status = getStatus(jsonObject);
-
-                    EventWrapper ew = new EventWrapper(streamName, status, null);
-                    for (io.s4.listener.EventHandler handler : handlers) {
-                        try {
-                            handler.processEvent(ew);
-                        } catch (Exception e) {
-                            Logger.getLogger("s4")
-                                  .error("Exception in raw event handler", e);
-                        }
-                    }
+                    // create a copy with some renamed fields
+                    JSONObject statusJSON = getStatus(messageJSON);
+                    Message m = new Message(streamName, "io.s4.example.twittertopiccount.Status", statusJSON.toString());
+                    driver.send(m);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
-                } catch (Exception e) {
-                    Logger.getLogger("s4")
-                          .error("Exception processing message", e);
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                } catch (JSONException je) {
+                    je.printStackTrace();
+                    Thread.currentThread().interrupt();
                 }
-            }
+            }  
         }
-
-        public Status getStatus(JSONObject jsonObject) {
+        
+        public JSONObject getStatus(JSONObject origStatusJSON) {
             try {
-                if (jsonObject == null || jsonObject.equals(JSONObject.NULL)) {
+                if (origStatusJSON == null || origStatusJSON.equals(JSONObject.NULL)) {
                     return null;
                 }
-
-                Status status = new Status();
-
-                status.setUser(getUser((JSONObject) jsonObject.opt("user")));
-
-                Object value = jsonObject.opt("id");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setId(((Number) value).longValue());
-                }
-
-                value = jsonObject.opt("in_reply_to_status_id");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setInReplyToStatusId(((Number) value).longValue());
-                }
-
-                value = jsonObject.opt("text");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setText((String) value);
-                }
-
-                value = jsonObject.opt("truncated");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setTruncated((Boolean) value);
-                }
-
-                value = jsonObject.opt("source");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setSource((String) value);
-                }
-
-                value = jsonObject.opt("in_reply_to_screen_name");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setInReplyToScreenName((String) value);
-                }
-
-                value = jsonObject.opt("favorited");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setFavorited((Boolean) value);
-                }
-
-                value = jsonObject.opt("in_reply_to_user_id");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setInReplyToUserId(((Number) value).longValue());
-                }
-
-                value = jsonObject.opt("created_at");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    status.setCreatedAt((String) value);
-                }
-
-                return status;
+                
+                JSONObject statusJSON = new JSONObject();
+                copyFields(origStatusJSON, statusJSON, fieldMap);
+                
+                JSONObject origUserJSON = origStatusJSON.getJSONObject("user");
+                JSONObject userJSON = new JSONObject();
+                copyFields(origUserJSON, userJSON, fieldMap);
+                statusJSON.put("user", userJSON);
+ 
+                return statusJSON;    
             } catch (Exception e) {
                 Logger.getLogger("s4").error(e);
             }
-
-            return null;
+            
+            return new JSONObject();
         }
-
-        public User getUser(JSONObject jsonObject) {
-            try {
-                if (jsonObject == null || jsonObject.equals(JSONObject.NULL)) {
-                    return null;
+        
+        public void copyFields(JSONObject from, JSONObject to, Map<String,String> fieldMap) 
+            throws JSONException {
+            for (Iterator<?> it = from.keys(); it.hasNext(); ) {
+                String fieldName = (String) it.next();
+                String adjustedFieldName = fieldName;
+                String proposedFieldName = null;
+                if ((proposedFieldName = fieldMap.get(fieldName)) != null) {
+                    adjustedFieldName = proposedFieldName;
                 }
+                to.put(adjustedFieldName, from.get(fieldName));
+            }        
+        }        
+    }
 
-                User user = new User();
+ 
+       
+    public static void main(String[] args) {
+        Options options = new Options();
+        options.addOption("a", "adapter_address", true, "Adapter address");
+        options.addOption("u", "url_string", true, "URL string");
+        CommandLineParser parser = new GnuParser();
 
-                Object value = jsonObject.opt("id");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setId(((Number) value).longValue());
-                }
+        CommandLine line = null;
+        try {
+            // parse the command line arguments
+            line = parser.parse(options, args);
+        } catch (ParseException exp) {
+            // oops, something went wrong
+            System.err.println("Parsing failed.  Reason: " + exp.getMessage());
+            System.exit(1);
+        }
+        
+        List<?> loArgs = line.getArgList();
 
-                value = jsonObject.opt("screen_name");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setScreenName((String) value);
-                }
-
-                value = jsonObject.opt("name");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setName((String) value);
-                }
-
-                value = jsonObject.opt("url");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setUrl((String) value);
-                }
-
-                value = jsonObject.opt("followers_count");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setFollowersCount(((Number) value).intValue());
-                }
-
-                value = jsonObject.opt("lang");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setLang((String) value);
-                }
-
-                value = jsonObject.opt("verified");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setVerified((Boolean) value);
-                }
-
-                value = jsonObject.opt("profile_image_url");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setProfileImageUrl((String) value);
-                }
-
-                value = jsonObject.opt("friends_count");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setFriendsCount(((Number) value).intValue());
-                }
-
-                value = jsonObject.opt("description");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setDescription((String) value);
-                }
-
-                value = jsonObject.opt("favourites_Count");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setFavouritesCount(((Number) value).intValue());
-                }
-
-                value = jsonObject.opt("geo_enabled");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setGeoEnabled((Boolean) value);
-                }
-
-                value = jsonObject.opt("listed_count");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setListedCount(((Number) value).intValue());
-                }
-
-                value = jsonObject.opt("profile_background_image_url");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setProfileBackgroundImageUrl((String) value);
-                }
-
-                value = jsonObject.opt("protected_user");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setProtectedUser((Boolean) value);
-                }
-
-                value = jsonObject.opt("location");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setLocation((String) value);
-                }
-
-                value = jsonObject.opt("statuses_count");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setStatusesCount(((Number) value).longValue());
-                }
-
-                value = jsonObject.opt("time_zone");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setTimeZone((String) value);
-                }
-
-                value = jsonObject.opt("contributors_enabled");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setContributorsEnabled((Boolean) value);
-                }
-
-                value = jsonObject.opt("utc_offset");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setUtcOffset(((Number) value).intValue());
-                }
-
-                value = jsonObject.opt("created_at");
-                if (value != null && !value.equals(JSONObject.NULL)) {
-                    user.setCreatedAt((String) value);
-                }
-
-                return user;
-            } catch (Exception e) {
-                Logger.getLogger("s4").error(e);
+        String clientAdapterAddress = null;
+        String clientAdapterHost = null;
+        int clientAdapterPort = -1;
+        if (line.hasOption("a")) {
+            clientAdapterAddress = line.getOptionValue("a");
+            String[] parts = clientAdapterAddress.split(":");
+            if (parts.length != 2) {
+                System.err.println("Bad adapter address specified "
+                        + clientAdapterAddress);
+                System.exit(1);
             }
-
-            return null;
+            clientAdapterHost = parts[0];
+            
+            try {
+                clientAdapterPort = Integer.parseInt(parts[1]);
+            }
+            catch (NumberFormatException nfe) {
+                System.err.println("Bad adapter address specified "
+                        + clientAdapterAddress);
+                System.exit(1);                
+            }
         }
+        
+        String urlString = null;
+        if (line.hasOption("u")) {
+            urlString = line.getOptionValue("u");
+        }
+
+        if (loArgs.size() < 1) {
+            System.err.println("No userid specified");
+            System.exit(1);
+        }
+        
+        if (loArgs.size() < 2) {
+            System.err.println("No password specified");
+            System.exit(1);
+        }
+
+        TwitterFeedListener tfl = new TwitterFeedListener();
+        tfl.setUserid((String)loArgs.get(0));
+        tfl.setPassword((String)loArgs.get(1));
+        if (clientAdapterAddress != null) {
+            tfl.setClientAdapterHost(clientAdapterHost);
+            tfl.setClientAdapterPort(clientAdapterPort);
+        }
+        if (urlString != null) {
+            tfl.setUrlString(urlString);
+        }
+
+        tfl.init();
+        tfl.run();
     }
-
-    @Override
-    public void addHandler(EventHandler handler) {
-        handlers.add(handler);
-
-    }
-
-    @Override
-    public boolean removeHandler(EventHandler handler) {
-        return handlers.remove(handler);
-    }
-
 }

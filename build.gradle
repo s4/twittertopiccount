@@ -33,14 +33,6 @@
  *   eclipse - creates an project for the Eclipse IDE
  */
 
-/* Include handy Gradle plugins. */
-apply plugin: 'eclipse'
-apply plugin: 'java'
-apply plugin: "application"
-
-/* Main application to run ... */
-mainClassName = "io.s4.example.twittertopiccount.Main"
-
 /* Set a version number for your app. */
  version = new Version(major: 0, minor: 1, releaseType: 'SNAPSHOT')
  group = 'io.s4'
@@ -62,6 +54,7 @@ mainClassName = "io.s4.example.twittertopiccount.Main"
  gson:               'com.google.code.gson:gson:1.6',
  log4j:              'log4j:log4j:1.2.15',
  jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
+ commons_cli:        'commons-cli:commons-cli:1.2',
  commons_logging:    'commons-logging:commons-logging:1.1.1',
  commons_io:         'commons-io:commons-io:2.0.1',
  commons_config:     'commons-configuration:commons-configuration:1.6',
@@ -82,13 +75,23 @@ repositories {
     mavenLocal()
     mavenCentral()
 }
+
+/* Include handy Gradle plugins. */
+apply plugin: 'eclipse'
+apply plugin: 'java'
+apply plugin: "application"
+
+/* Main application to run ... */
+mainClassName = "io.s4.example.twittertopiccount.TwitterFeedListener"
    
 /* Dependencies. */
 dependencies {
 	compile( libraries.s4_core)
+	compile( libraries.s4_driver)
 	compile( libraries.json)
 	compile( libraries.gson)
 	compile( libraries.log4j )
+	compile( libraries.commons_cli )
 	compile( libraries.commons_logging )
 	compile( libraries.commons_io )
 	compile( libraries.commons_config )
