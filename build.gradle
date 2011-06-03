@@ -83,7 +83,8 @@ apply plugin: "application"
 
 /* Main application to run ... */
 mainClassName = "io.s4.example.twittertopiccount.TwitterFeedListener"
-   
+applicationName = "twitter_feed_listener"
+
 /* Dependencies. */
 dependencies {
 	compile( libraries.s4_core)
