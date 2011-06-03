@@ -20,7 +20,6 @@ import io.s4.dispatcher.EventDispatcher;
 import io.s4.processor.AbstractPE;
 
 public class TopicExtractorPE extends AbstractPE {
-    private String id;
     private EventDispatcher dispatcher;
     private String outputStreamName;
 
@@ -38,10 +37,6 @@ public class TopicExtractorPE extends AbstractPE {
 
     public void setOutputStreamName(String outputStreamName) {
         this.outputStreamName = outputStreamName;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public void processEvent(Status status) {
@@ -80,11 +75,6 @@ public class TopicExtractorPE extends AbstractPE {
     public void output() {
         // TODO Auto-generated method stub
 
-    }
-
-    @Override
-    public String getId() {
-        return this.id;
     }
 
     static class DummyDispatcher extends Dispatcher {

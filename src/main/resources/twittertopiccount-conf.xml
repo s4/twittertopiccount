@@ -2,7 +2,6 @@
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans             http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
 
   <!-- <bean id="printEventPE" class="io.s4.processor.PrintEventPE">
-    <property name="id" value="printEventPE"/>
     <property name="keys">
       <list>
         <value>TopicSeen topic</value>
@@ -11,7 +10,6 @@
   </bean> -->
 
   <bean id="topicExtractorPE" class="io.s4.example.twittertopiccount.TopicExtractorPE">
-    <property name="id" value="topicSeenPE"/>
     <property name="keys">
       <list>
         <value>RawStatus *</value>
@@ -22,7 +20,6 @@
   </bean>
 
   <bean id="topicCountAndReportPE" class="io.s4.example.twittertopiccount.TopicCountAndReportPE">
-    <property name="id" value="topicCountAndReportPE"/>
     <property name="keys">
       <list>
         <value>TopicSeen topic</value>
@@ -40,7 +37,6 @@
   </bean>
 
   <bean id="top10TopicPE" class="io.s4.example.twittertopiccount.TopNTopicPE">
-    <property name="id" value="top10TopicPE"/>
     <property name="keys">
       <list>
         <value>AggregatedTopicSeen reportKey</value>

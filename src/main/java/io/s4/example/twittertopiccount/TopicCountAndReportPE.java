@@ -19,15 +19,10 @@ import io.s4.dispatcher.EventDispatcher;
 import io.s4.processor.AbstractPE;
 
 public class TopicCountAndReportPE extends AbstractPE {
-    private String id;
     private EventDispatcher dispatcher;
     private String outputStreamName;
     private int threshold;
     private int count;
-
-    public void setId(String id) {
-        this.id = id;
-    }
 
     public EventDispatcher getDispatcher() {
         return dispatcher;
@@ -66,11 +61,6 @@ public class TopicCountAndReportPE extends AbstractPE {
                                             count);
         topicSeen.setReportKey("1");
         dispatcher.dispatchEvent(outputStreamName, topicSeen);
-    }
-
-    @Override
-    public String getId() {
-        return this.id;
     }
 
 }

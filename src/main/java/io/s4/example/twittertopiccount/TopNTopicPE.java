@@ -31,16 +31,11 @@ import org.json.JSONObject;
 import com.google.gson.Gson;
 
 public class TopNTopicPE extends AbstractPE {
-    private String id;
     private Persister persister;
     private int entryCount = 10;
     private Map<String, Integer> topicMap = new ConcurrentHashMap<String, Integer>();
     private int persistTime;
     private String persistKey = "myapp:topNTopics";
-
-    public void setId(String id) {
-        this.id = id;
-    }
 
     public Persister getPersister() {
         return persister;
@@ -128,11 +123,6 @@ public class TopNTopicPE extends AbstractPE {
         } catch (Exception e) {
             Logger.getLogger("s4").error(e);
         }
-    }
-
-    @Override
-    public String getId() {
-        return this.id;
     }
 
     public static class TopNEntry implements Comparable<TopNEntry> {
