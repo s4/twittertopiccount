@@ -59,14 +59,14 @@ Start each command in a different window to see the updates on the standard outp
 
 <pre>
 # Start S4 server.
-$S4_IMAGE/scripts/s4-start.sh -r client-adapter
+$S4_IMAGE/scripts/start-s4.sh -r client-adapter &
 
 # Start S4 client adapter server.
 $S4_IMAGE/scripts/run-client-adapter.sh -s client-adapter \
--g s4 -x -d $S4_IMAGE/s4-core/conf/default/client-stub-conf.xml
+-g s4 -x -d $S4_IMAGE/s4-core/conf/default/client-stub-conf.xml &
 
-# Start a any other PROCESS.
-./s4-meter-generator/build/install/twittertopiccount/bin/twittertopiccount
+# Start the Twitter feed listener
+build/install/twitter_feed_listener/bin/twitter_feed_listener <your-twitter-user> <your-twitter-password>
 </pre>
 
 Troubleshooting
