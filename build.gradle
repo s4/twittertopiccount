@@ -46,24 +46,6 @@
      System.exit(-1)
  }
  
- /* All project libraries must be defined here. */
- libraries = [
- s4_core:            'io.s4:s4-core:0.3-SNAPSHOT',
- s4_driver:          'io.s4:s4-driver:0.3-SNAPSHOT',
- json:               'org.json:json:20090211',
- gson:               'com.google.code.gson:gson:1.6',
- log4j:              'log4j:log4j:1.2.15',
- jakarta_regexp:     'jakarta-regexp:jakarta-regexp:1.4',
- commons_cli:        'commons-cli:commons-cli:1.2',
- commons_logging:    'commons-logging:commons-logging:1.1.1',
- commons_io:         'commons-io:commons-io:2.0.1',
- commons_config:     'commons-configuration:commons-configuration:1.6',
- commons_codec:      'commons-codec:commons-codec:1.4',
- commons_httpclient: 'commons-httpclient:commons-httpclient:3.1',
- spring:             'org.springframework:spring:2.5.6',
- junit:              'junit:junit:4.4'
- ]
-
 /* Set Java version. */
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -87,18 +69,18 @@ applicationName = "twitter_feed_listener"
 
 /* Dependencies. */
 dependencies {
-	compile( libraries.s4_core)
-	compile( libraries.s4_driver)
-	compile( libraries.json)
-	compile( libraries.gson)
-	compile( libraries.log4j )
-	compile( libraries.commons_cli )
-	compile( libraries.commons_logging )
-	compile( libraries.commons_io )
-	compile( libraries.commons_config )
-	compile( libraries.commons_codec )
-	compile( libraries.commons_httpclient )
-	testCompile( libraries.junit )
+ 	compile('io.s4:s4-core:0.3-SNAPSHOT' )
+ 	compile('io.s4:s4-driver:0.3-SNAPSHOT' )
+ 	compile('org.json:json:20090211' )
+ 	compile('com.google.code.gson:gson:1.6' )
+ 	compile('log4j:log4j:1.2.15' )
+ 	compile('commons-cli:commons-cli:1.2' )
+ 	compile('commons-logging:commons-logging:1.1.1' )
+ 	compile('commons-io:commons-io:2.0.1' )
+ 	compile('commons-configuration:commons-configuration:1.6' )
+ 	compile('commons-codec:commons-codec:1.4' )
+ 	compile('commons-httpclient:commons-httpclient:3.1' )
+ 	testCompile('junit:junit:4.4' )
 }
 
 /* Customize your jar files. */
