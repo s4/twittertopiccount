@@ -46,10 +46,6 @@
      System.exit(-1)
  }
  
-/* Set Java version. */
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
-   
 /* Search these repos to find artifacts. Gradle will download and cache. */
 repositories {
     flatDir name: 's4core', dirs:  "${s4Image}/s4-core/lib"
@@ -63,6 +59,10 @@ apply plugin: 'eclipse'
 apply plugin: 'java'
 apply plugin: "application"
 
+/* Set Java version. */
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+   
 /* Main application to run ... */
 mainClassName = "io.s4.example.twittertopiccount.TwitterFeedListener"
 applicationName = "twitter_feed_listener"
