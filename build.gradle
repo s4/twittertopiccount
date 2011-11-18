@@ -69,8 +69,8 @@ applicationName = "twitter_feed_listener"
 
 /* Dependencies. */
 dependencies {
- 	compile('io.s4:s4-core:0.3.0' )
- 	compile('io.s4:s4-driver:0.3.0' )
+ 	compile('io.s4:s4-core:0.4.0-SNAPSHOT' )
+ 	compile('io.s4:s4-driver:0.4.0-SNAPSHOT' )
  	compile('org.json:json:20090211' )
  	compile('com.google.code.gson:gson:1.6' )
  	compile('log4j:log4j:1.2.15' )
