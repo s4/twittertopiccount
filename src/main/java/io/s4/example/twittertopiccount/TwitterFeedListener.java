@@ -45,7 +45,7 @@ import org.apache.commons.httpclient.util.EncodingUtil;
 public class TwitterFeedListener {
     private String userid;
     private String password;
-    private String urlString = "http://stream.twitter.com/1/statuses/sample.json";
+    private String urlString = "https://stream.twitter.com/1/statuses/sample.json";
     private String clientAdapterHost = "localhost";
     private int clientAdapterPort = 2334;
     private long maxBackoffTime = 30 * 1000; // 5 seconds
