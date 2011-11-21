@@ -13,10 +13,10 @@
  * language governing permissions and limitations under the
  * License. See accompanying LICENSE file. 
  */
-package io.s4.example.twittertopiccount;
+package org.apache.s4.example.twittertopiccount;
 
-import io.s4.client.Driver;
-import io.s4.client.Message;
+import org.apache.s4.client.Driver;
+import org.apache.s4.client.Message;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -177,7 +177,7 @@ public class TwitterFeedListener {
 
                     // create a copy with some renamed fields
                     JSONObject statusJSON = getStatus(messageJSON);
-                    Message m = new Message(streamName, "io.s4.example.twittertopiccount.Status", statusJSON.toString());
+                    Message m = new Message(streamName, "org.apache.s4.example.twittertopiccount.Status", statusJSON.toString());
                     driver.send(m);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();

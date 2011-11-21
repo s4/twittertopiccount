@@ -35,7 +35,7 @@
 
 /* Set a version number for your app. */
  version = new Version(major: 0, minor: 3, bugfix: 0)
- group = 'io.s4'
+ group = 'org.apache.s4'
 
  /* Read S4_IMAGE environment variable. */
  env = System.getenv()
@@ -64,13 +64,13 @@ sourceCompatibility = 1.6
 targetCompatibility = 1.6
    
 /* Main application to run ... */
-mainClassName = "io.s4.example.twittertopiccount.TwitterFeedListener"
+mainClassName = "org.apache.s4.example.twittertopiccount.TwitterFeedListener"
 applicationName = "twitter_feed_listener"
 
 /* Dependencies. */
 dependencies {
- 	compile('io.s4:s4-core:0.4.0-SNAPSHOT' )
- 	compile('io.s4:s4-driver:0.4.0-SNAPSHOT' )
+ 	compile('org.apache.s4:s4-core:0.4.0-SNAPSHOT' )
+ 	compile('org.apache.s4:s4-driver:0.4.0-SNAPSHOT' )
  	compile('org.json:json:20090211' )
  	compile('com.google.code.gson:gson:1.6' )
  	compile('log4j:log4j:1.2.15' )
@@ -89,7 +89,7 @@ manifest.mainAttributes(
     'Implementation-Url': 'http://s4.io',
     'Implementation-Version': version,
     'Implementation-Vendor': 'The S4 Project',
-    'Implementation-Vendor-Id': 'io.s4'
+    'Implementation-Vendor-Id': 'org.apache.s4'
 )
 
 /* Bug workaround. */
